@@ -11,14 +11,25 @@ usage() {
     echo "Usage: $0 <action> [domain] [email]"
     echo ""
     echo "Actions:"
-    echo "  init <domain> <email>  - Apply for a new certificate"
+    echo "  init <domain> <email>  - Apply for a new certificate (DNS-01 via Cloudflare)"
     echo "  renew                  - Renew all certificates"
     echo "  test <domain> <email>  - Test certificate application (dry-run)"
+    echo "  list                   - List all certificates"
     echo ""
     echo "Examples:"
     echo "  $0 init example.com admin@example.com"
     echo "  $0 renew"
     echo "  $0 test example.com admin@example.com"
+    echo ""
+    echo "Note: Before using, edit certbot/cloudflare.ini with your Cloudflare API Token"
+}
+
+# Check if cloudflare.ini is configured
+check_cloudflare_config() {
+    if grep -q "YOUR_CLOUDFLARE_API_TOKEN_HERE" ./certbot/cloudflare.ini 2>/dev/null; then
+        echo "Error: Please configure your Cloudflare API Token in certbot/cloudflare.ini"
+        exit 1
+    fi
 }
 
 case "$ACTION" in
@@ -28,13 +39,15 @@ case "$ACTION" in
             usage
             exit 1
         fi
-        echo "Applying for certificate for $DOMAIN..."
-        docker compose run --rm certbot certonly --webroot \
-            --webroot-path=/var/www/certbot \
+        check_cloudflare_config
+        echo "Applying for certificate for $DOMAIN using DNS-01 (Cloudflare)..."
+        docker compose run --rm certbot certonly \
+            --dns-cloudflare \
+            --dns-cloudflare-credentials /etc/letsencrypt/cloudflare.ini \
+            --dns-cloudflare-propagation-seconds 30 \
             -d "$DOMAIN" \
             --email "$EMAIL" \
             --agree-tos \
-             --staging \
             --no-eff-email
         echo "Certificate obtained! Reloading nginx..."
         docker compose exec nginx nginx -s reload
@@ -51,14 +64,21 @@ case "$ACTION" in
             usage
             exit 1
         fi
+        check_cloudflare_config
         echo "Testing certificate application for $DOMAIN (dry-run)..."
-        docker compose run --rm certbot certonly --webroot \
-            --webroot-path=/var/www/certbot \
+        docker compose run --rm certbot certonly \
+            --dns-cloudflare \
+            --dns-cloudflare-credentials /etc/letsencrypt/cloudflare.ini \
+            --dns-cloudflare-propagation-seconds 30 \
             -d "$DOMAIN" \
             --email "$EMAIL" \
             --agree-tos \
             --no-eff-email \
             --dry-run
+        ;;
+    list)
+        echo "Listing certificates..."
+        docker compose run --rm certbot certificates
         ;;
     *)
         usage
