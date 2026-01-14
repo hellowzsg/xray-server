@@ -35,6 +35,7 @@ services:
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/cloudflare.ini:/etc/letsencrypt/cloudflare.ini:ro
+      - ./logs/certbot:/var/log/letsencrypt
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
     networks:
       - proxy-network

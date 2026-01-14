@@ -41,7 +41,7 @@ case "$ACTION" in
         fi
         check_cloudflare_config
         echo "Applying for certificate for $DOMAIN using DNS-01 (Cloudflare)..."
-        docker compose run --rm certbot certonly \
+        docker compose run --rm --entrypoint certbot certbot certonly \
             --dns-cloudflare \
             --dns-cloudflare-credentials /etc/letsencrypt/cloudflare.ini \
             --dns-cloudflare-propagation-seconds 30 \
@@ -54,7 +54,7 @@ case "$ACTION" in
         ;;
     renew)
         echo "Renewing certificates..."
-        docker compose run --rm certbot renew
+        docker compose run --rm --entrypoint certbot certbot renew
         echo "Reloading nginx..."
         docker compose exec nginx nginx -s reload
         ;;
@@ -66,7 +66,7 @@ case "$ACTION" in
         fi
         check_cloudflare_config
         echo "Testing certificate application for $DOMAIN (dry-run)..."
-        docker compose run --rm certbot certonly \
+        docker compose run --rm --entrypoint certbot certbot certonly \
             --dns-cloudflare \
             --dns-cloudflare-credentials /etc/letsencrypt/cloudflare.ini \
             --dns-cloudflare-propagation-seconds 30 \
@@ -78,7 +78,7 @@ case "$ACTION" in
         ;;
     list)
         echo "Listing certificates..."
-        docker compose run --rm certbot certificates
+        docker compose run --rm --entrypoint certbot certbot certificates
         ;;
     *)
         usage
