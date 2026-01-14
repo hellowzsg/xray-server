@@ -49,6 +49,25 @@ case "$ACTION" in
             --email "$EMAIL" \
             --agree-tos \
             --no-eff-email
+        
+        # Create symbolic link to www directory
+        echo "Creating symbolic link for certificate..."
+        WWW_SSL_DIR="./www/$DOMAIN/ssl"
+        CERT_DIR="./certbot/conf/live/$DOMAIN"
+        
+        if [ -d "$CERT_DIR" ]; then
+            mkdir -p "./www/$DOMAIN"
+            # Remove old link if exists
+            [ -L "$WWW_SSL_DIR" ] && rm "$WWW_SSL_DIR"
+            # Remove directory if exists (to replace with link)
+            [ -d "$WWW_SSL_DIR" ] && rm -rf "$WWW_SSL_DIR"
+            # Create symbolic link (ssl directory itself links to certificate directory)
+            ln -sf "$(pwd)/$CERT_DIR" "$WWW_SSL_DIR"
+            echo "Certificate linked to $WWW_SSL_DIR"
+        else
+            echo "Warning: Certificate directory $CERT_DIR not found"
+        fi
+        
         echo "Certificate obtained! Reloading nginx..."
         docker compose exec nginx nginx -s reload
         ;;
