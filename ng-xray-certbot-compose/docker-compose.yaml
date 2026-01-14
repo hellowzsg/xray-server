@@ -1,0 +1,44 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./logs/nginx:/var/log/nginx
+      - ./www:/var/www
+      # - ./certbot/conf:/etc/letsencrypt:ro
+    depends_on:
+      - xray
+    networks:
+      - proxy-network
+
+  xray:
+    image: ghcr.io/xtls/xray-core:latest
+    container_name: xray
+    # user: root
+    restart: unless-stopped
+    command: ["run", "-c", "/usr/local/etc/xray/config.json"]
+    volumes:
+      - ./xray/config.json:/usr/local/etc/xray/config.json:ro
+      - ./logs/xray:/var/log/xray
+    networks:
+      - proxy-network
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: certbot
+    volumes:
+      - ./www:/var/www
+      - ./certbot/conf:/etc/letsencrypt
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - proxy-network
+
+networks:
+  proxy-network:
+    driver: bridge

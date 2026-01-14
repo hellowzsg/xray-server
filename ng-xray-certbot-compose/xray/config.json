@@ -1,0 +1,50 @@
+{
+    "log": {
+        "loglevel": "warning",
+        "access":"/var/log/xray/access.log",
+        "error":"/var/log/xray/error.log"
+    },
+    "routing": {
+        "domainStrategy": "AsIs",
+        "rules": [
+            {
+                "ip": [
+                    "geoip:private"
+                ],
+                "outboundTag": "block"
+            }
+        ]
+    },
+    "inbounds": [
+        {
+            "listen": "0.0.0.0",
+            "port": 20081,
+            "protocol": "vmess",
+            "settings": {
+                "clients": [
+                    {
+                        "id": "00000000-0000-0000-0000-000000000000",
+                        "alterId": 0
+                    }
+                ]
+            },
+            "streamSettings": {
+                "network": "ws",
+                "security": "none",
+                "wsSettings":{
+                    "path": "/login"
+                }
+            }
+        }
+    ],
+    "outbounds": [
+        {
+            "protocol": "freedom",
+            "tag": "direct"
+        },
+        {
+            "protocol": "blackhole",
+            "tag": "block"
+        }
+    ]
+}
